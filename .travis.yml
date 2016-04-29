@@ -17,9 +17,6 @@ install:
 script:
   - go vet ./...
   - diff -u <(echo -n) <(gofmt -d -s .)
-  - go test -v -coverprofile=baa.coverprofile
-  - gover
-  - goveralls -coverprofile=gover.coverprofile -service=travis-ci
 
 notifications:
   email:
