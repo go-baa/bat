@@ -35,6 +35,7 @@ func init() {
 	cmdRun.Flag.Var(&excludedPaths, "e", "Excluded paths[].")
 	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Build tags (https://golang.org/pkg/go/build/)")
 	extensions = append(extensions, ".go")
+	excludedPaths = append(excludedPaths, "vendor")
 }
 
 var appname string
