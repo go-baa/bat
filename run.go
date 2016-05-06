@@ -26,6 +26,9 @@ var extensions strFlags
 // The flags list of the paths excluded from watching
 var excludedPaths strFlags
 
+// godeps use godeps manage vendor
+var godeps bool
+
 // Pass through to -tags arg of "go build"
 var buildTags string
 
@@ -33,6 +36,7 @@ func init() {
 	cmdRun.Run = runApp
 	cmdRun.Flag.Var(&extensions, "t", "extension, default .go")
 	cmdRun.Flag.Var(&excludedPaths, "e", "Excluded paths[].")
+	cmdRun.Flag.BoolVar(&godeps, "godeps", true, "use Godeps manage vendor")
 	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Build tags (https://golang.org/pkg/go/build/)")
 	extensions = append(extensions, ".go")
 	excludedPaths = append(excludedPaths, "vendor")
@@ -41,13 +45,14 @@ func init() {
 var appname string
 
 func runApp(cmd *Command, args []string) int {
-	fmt.Println("bat   :" + version)
+	fmt.Println("bat   : " + version)
 	goversion, err := exec.Command("go", "version").Output()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Go    :" + strings.TrimSpace(string(goversion)))
-	fmt.Printf("Ext   :%v\n", extensions)
+	fmt.Println("Go    : " + strings.TrimSpace(string(goversion)))
+	fmt.Printf("Godeps: %v\n", godeps)
+	fmt.Printf("Ext   : %v\n", extensions)
 	fmt.Println("")
 
 	exit := make(chan bool)

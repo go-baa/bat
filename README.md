@@ -23,3 +23,11 @@ bat run
 ```
 bat run -t .ini -t .go -t .html -e logs
 ```
+
+> bat default open godeps option, every build will resave vendor
+
+disable godeps check:
+
+```
+bat run -godeps=false
+```

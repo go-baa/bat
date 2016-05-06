@@ -133,6 +133,20 @@ func Autobuild() {
 	cmdName := "go"
 
 	var err error
+
+	// if in vendor, update vendor package first
+	if godeps && isExist("vendor") {
+		os.RemoveAll("Godeps")
+		dcmd := exec.Command("godep", "save")
+		dcmd.Stdout = os.Stdout
+		dcmd.Stderr = os.Stderr
+		err = dcmd.Run()
+		if err != nil {
+			ColorLog("[ERRO] ============== Godeps save failed ===================\n")
+			return
+		}
+	}
+
 	// For applications use full import path like "github.com/.../.."
 	// are able to use "go install" to reduce build time.
 
