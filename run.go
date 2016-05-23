@@ -12,7 +12,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [-t=.go -ext=.ini] [-e=Godeps -e=folderToExclude] [-tags=goBuildTags]",
+	UsageLine: "run [-x=.go -x=.ini] [-a=../model] [-e=Godeps -e=folderToExclude] [-tags=goBuildTags]",
 	Short:     "run the app and start a Web server for development",
 	Long: `
 Run command will supervise the file system of the go project using inotify,
@@ -22,6 +22,9 @@ it will recompile and restart the app after any modifications.
 
 // The extension list of the paths excluded from watching
 var extensions strFlags
+
+// the addon paths for wathing
+var addonPaths strFlags
 
 // The flags list of the paths excluded from watching
 var excludedPaths strFlags
@@ -34,7 +37,8 @@ var buildTags string
 
 func init() {
 	cmdRun.Run = runApp
-	cmdRun.Flag.Var(&extensions, "t", "extension, default .go")
+	cmdRun.Flag.Var(&extensions, "x", "extension, default .go")
+	cmdRun.Flag.Var(&addonPaths, "a", "addon paths[].")
 	cmdRun.Flag.Var(&excludedPaths, "e", "Excluded paths[].")
 	cmdRun.Flag.BoolVar(&godeps, "godeps", true, "use Godeps manage vendor")
 	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Build tags (https://golang.org/pkg/go/build/)")
@@ -69,6 +73,11 @@ func runApp(cmd *Command, args []string) int {
 	var paths []string
 
 	readAppDirectories(crupath, &paths)
+
+	// addon paths
+	for _, ap := range addonPaths {
+		readAppDirectories(ap, &paths)
+	}
 
 	// Because monitor files has some issues, we watch current directory
 	// and ignore non-go files.
