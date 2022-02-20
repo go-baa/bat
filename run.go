@@ -12,7 +12,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [-x=.go -x=.ini] [-a=../model] [-e=Godeps -e=folderToExclude] [-tags=goBuildTags]",
+	UsageLine: "run [-m=./cmd/main.go] [-x=.go -x=.ini] [-a=../model] [-e=folderToExclude] [-tags=goBuildTags]",
 	Short:     "run the app and start a Web server for development",
 	Long: `
 Run command will supervise the file system of the go project using inotify,
@@ -20,27 +20,27 @@ it will recompile and restart the app after any modifications.
 `,
 }
 
+// The main entrance of watcher
+var mainPath string
+
 // The extension list of the paths excluded from watching
 var extensions strFlags
 
-// the addon paths for wathing
+// The addon paths for wathing
 var addonPaths strFlags
 
 // The flags list of the paths excluded from watching
 var excludedPaths strFlags
-
-// godeps use godeps manage vendor
-var godeps bool
 
 // Pass through to -tags arg of "go build"
 var buildTags string
 
 func init() {
 	cmdRun.Run = runApp
+	cmdRun.Flag.StringVar(&mainPath, "m", "", "main file path, default ./")
 	cmdRun.Flag.Var(&extensions, "x", "extension, default .go")
 	cmdRun.Flag.Var(&addonPaths, "a", "addon paths[].")
 	cmdRun.Flag.Var(&excludedPaths, "e", "Excluded paths[].")
-	cmdRun.Flag.BoolVar(&godeps, "godeps", true, "use Godeps manage vendor")
 	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Build tags (https://golang.org/pkg/go/build/)")
 	extensions = append(extensions, ".go")
 	excludedPaths = append(excludedPaths, "vendor")
@@ -55,7 +55,6 @@ func runApp(cmd *Command, args []string) int {
 		log.Fatal(err)
 	}
 	fmt.Println("Go    : " + strings.TrimSpace(string(goversion)))
-	fmt.Printf("Godeps: %v\n", godeps)
 	fmt.Printf("Ext   : %v\n", extensions)
 	fmt.Println("")
 
@@ -90,12 +89,10 @@ func runApp(cmd *Command, args []string) int {
 	NewWatcher(paths, extensions)
 	Autobuild()
 
-	for {
-		select {
-		case <-exit:
-			runtime.Goexit()
-		}
-	}
+	<-exit
+	runtime.Goexit()
+
+	return 0
 }
 
 func readAppDirectories(directory string, paths *[]string) {
@@ -114,12 +111,12 @@ func readAppDirectories(directory string, paths *[]string) {
 			continue
 		}
 
-		if fileInfo.IsDir() == true && fileInfo.Name()[0] != '.' {
+		if fileInfo.IsDir() && fileInfo.Name()[0] != '.' {
 			readAppDirectories(directory+"/"+fileInfo.Name(), paths)
 			continue
 		}
 
-		if useDirectory == true {
+		if useDirectory {
 			continue
 		}
 
@@ -128,8 +125,6 @@ func readAppDirectories(directory string, paths *[]string) {
 			useDirectory = true
 		}
 	}
-
-	return
 }
 
 // If a file is excluded

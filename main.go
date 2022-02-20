@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const version = "0.1.2"
+const version = "0.2.0"
 
 type Command struct {
 	// Run runs the command.

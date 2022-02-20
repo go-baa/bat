@@ -15,7 +15,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -132,65 +131,26 @@ func Autobuild() {
 
 	cmdName := "go"
 
-	var err error
-
-	// if in vendor, update vendor package first
-	if godeps && isExist("vendor") {
-		os.RemoveAll("Godeps")
-		dcmd := exec.Command("godep", "save")
-		dcmd.Stdout = os.Stdout
-		dcmd.Stderr = os.Stderr
-		err = dcmd.Run()
-		if err != nil {
-			ColorLog("[ERRO] ============== Godeps save failed ===================\n")
-			return
-		}
+	appName := appname
+	if runtime.GOOS == "windows" {
+		appName += ".exe"
 	}
 
-	// For applications use full import path like "github.com/.../.."
-	// are able to use "go install" to reduce build time.
-
-	icmd := exec.Command("go", "list", "./...")
-	buf := bytes.NewBuffer([]byte(""))
-	icmd.Stdout = buf
-	icmd.Env = append(os.Environ(), "GOGC=off")
-	err = icmd.Run()
-	if err == nil {
-		list := strings.Split(buf.String(), "\n")[1:]
-		for _, pkg := range list {
-			if len(pkg) == 0 {
-				continue
-			}
-			icmd = exec.Command(cmdName, "install", pkg)
-			icmd.Stdout = os.Stdout
-			icmd.Stderr = os.Stderr
-			icmd.Env = append(os.Environ(), "GOGC=off")
-			err = icmd.Run()
-			if err != nil {
-				break
-			}
-		}
+	args := []string{"build"}
+	args = append(args, "-o", appName)
+	if buildTags != "" {
+		args = append(args, "-tags", buildTags)
 	}
 
-	if err == nil {
-		appName := appname
-		if runtime.GOOS == "windows" {
-			appName += ".exe"
-		}
-
-		args := []string{"build"}
-		args = append(args, "-o", appName)
-		if buildTags != "" {
-			args = append(args, "-tags", buildTags)
-		}
-
-		bcmd := exec.Command(cmdName, args...)
-		bcmd.Env = append(os.Environ(), "GOGC=off")
-		bcmd.Stdout = os.Stdout
-		bcmd.Stderr = os.Stderr
-		err = bcmd.Run()
+	if mainPath != "" {
+		args = append(args, mainPath)
 	}
 
+	bcmd := exec.Command(cmdName, args...)
+	bcmd.Env = append(os.Environ(), "GOGC=off")
+	bcmd.Stdout = os.Stdout
+	bcmd.Stderr = os.Stderr
+	err := bcmd.Run()
 	if err != nil {
 		ColorLog("[ERRO] ============== Build failed ===================\n")
 		return
@@ -224,7 +184,7 @@ func Restart(appname string) {
 // Start ...
 func Start(appname string) {
 	ColorLog("[INFO] Restarting %s ...\n", appname)
-	if strings.Index(appname, "./") == -1 {
+	if !strings.Contains(appname, "./") {
 		appname = "./" + appname
 	}
 
@@ -240,8 +200,5 @@ func Start(appname string) {
 
 // checkTMPFile returns true if the event was for TMP files.
 func checkTMPFile(name string) bool {
-	if strings.HasSuffix(strings.ToLower(name), ".tmp") {
-		return true
-	}
-	return false
+	return strings.HasSuffix(strings.ToLower(name), ".tmp")
 }
